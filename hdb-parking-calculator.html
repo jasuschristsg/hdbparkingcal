@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HDB Parking Calculator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f4f8;
+    color: #1a202c;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  .container { max-width: 680px; margin: 0 auto; }
+
+  header {
+    background: #1557a0;
+    color: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  header .icon { font-size: 2rem; }
+  header h1 { font-size: 1.25rem; font-weight: 700; line-height: 1.2; }
+  header p { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card h2 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #718096;
+    margin-bottom: 16px;
+  }
+
+  /* Input grid */
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 480px) { .input-grid { grid-template-columns: 1fr; } }
+
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #1a202c;
+    transition: border-color 0.15s;
+    background: #fafafa;
+  }
+  .field input:focus { outline: none; border-color: #1557a0; background: white; }
+
+  /* Toggle row */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
+  }
+  .toggle-label { font-size: 0.88rem; }
+  .toggle-label span { display: block; font-weight: 600; color: #2d3748; }
+  .toggle-label small { color: #718096; font-size: 0.78rem; }
+
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider {
+    position: absolute;
+    inset: 0;
+    background: #cbd5e0;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .toggle .slider:before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .slider { background: #1557a0; }
+  .toggle input:checked + .slider:before { transform: translateX(20px); }
+
+  /* Calculate button */
+  .btn {
+    width: 100%;
+    padding: 13px;
+    background: #1557a0;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+  .btn:hover { background: #1046884; }
+  .btn:active { transform: scale(0.99); background: #0d3d73; }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+  @media (max-width: 400px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+
+  .stat {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat .val { font-size: 1.35rem; font-weight: 800; color: #1557a0; }
+  .stat .lbl { font-size: 0.72rem; color: #718096; margin-top: 2px; }
+
+  .total-charge {
+    background: #1557a0;
+    color: white;
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .total-charge .amount { font-size: 2.8rem; font-weight: 900; letter-spacing: -1px; }
+  .total-charge .label { font-size: 0.82rem; opacity: 0.8; margin-top: 2px; }
+
+  .cap-notice {
+    background: #fffbeb;
+    border: 1.5px solid #f6ad55;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: #744210;
+    margin-top: 12px;
+    display: none;
+  }
+  .cap-notice.show { display: block; }
+
+  /* Accordion */
+  .day-group { border: 1.5px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #f7fafc;
+    cursor: pointer;
+    user-select: none;
+    gap: 8px;
+  }
+  .day-header:hover { background: #edf2f7; }
+  .day-header .day-title { font-weight: 700; font-size: 0.9rem; color: #2d3748; }
+  .day-header .day-meta { font-size: 0.78rem; color: #718096; margin-top: 2px; }
+  .day-header .day-total { font-weight: 800; font-size: 1rem; color: #1557a0; white-space: nowrap; }
+  .day-header .chevron { font-size: 0.8rem; color: #a0aec0; transition: transform 0.2s; flex-shrink: 0; }
+  .day-group.open .chevron { transform: rotate(180deg); }
+
+  .day-body { display: none; }
+  .day-group.open .day-body { display: block; }
+
+  /* Period sub-header */
+  .period-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: #f0f4f8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-top: 1px solid #e2e8f0;
+  }
+  .period-header .period-charge { font-size: 0.82rem; color: #2d3748; }
+
+  /* Block rows */
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  tbody tr { border-bottom: 1px solid #f7fafc; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 6px 16px; }
+  tbody td:last-child { text-align: right; font-weight: 600; }
+  tbody tr.night-row { background: #ebf4ff; }
+  tbody tr.capped-row { opacity: 0.4; text-decoration: line-through; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .badge.night { background: #bee3f8; color: #1a4971; }
+  .badge.day { background: #c6f6d5; color: #1a4731; }
+  .badge.capped { background: #feebc8; color: #744210; }
+
+  .placeholder {
+    text-align: center;
+    padding: 32px 0;
+    color: #a0aec0;
+    font-size: 0.9rem;
+  }
+  .placeholder .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+  /* Error */
+  .error-msg {
+    background: #fff5f5;
+    border: 1.5px solid #feb2b2;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.83rem;
+    color: #c53030;
+    margin-top: 12px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="icon">🅿️</div>
+    <div>
+      <h1>HDB Parking Calculator</h1>
+      <p>Outside Central Area · Short-Term Parking</p>
+    </div>
+  </header>
+
+  <!-- Inputs -->
+  <div class="card">
+    <h2>Parking Period</h2>
+    <div class="input-grid">
+      <div class="field">
+        <label>Start Date &amp; Time</label>
+        <input type="datetime-local" id="startTime">
+      </div>
+      <div class="field">
+        <label>End Date &amp; Time</label>
+        <input type="datetime-local" id="endTime">
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-label">
+        <span>Night Parking Scheme (NPS)</span>
+        <small>Caps: $5/night (10:30pm–7am) · $12/whole day</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="npsToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-row" style="margin-top:8px">
+      <div class="toggle-label">
+        <span>Free Parking Scheme (FPS)</span>
+        <small>Free 7am–10:30pm on Sundays &amp; Public Holidays</small>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="fpsToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="btn" onclick="calculate()">Calculate Charges</button>
+  </div>
+
+  <!-- Result -->
+  <div id="resultSection" style="display:none">
+
+    <div class="total-charge">
+      <div class="amount" id="totalAmount">$0.00</div>
+      <div class="label">Total Parking Charge</div>
+    </div>
+
+    <div class="card">
+      <div class="summary-grid">
+        <div class="stat">
+          <div class="val" id="statDuration">—</div>
+          <div class="lbl">Duration</div>
+        </div>
+        <div class="stat">
+          <div class="val" id="statBlocks">—</div>
+          <div class="lbl">Half-Hour Blocks</div>
+        </div>
+        <div class="stat">
+          <div class="val" id="statRaw">—</div>
+          <div class="lbl">Raw Charge</div>
+        </div>
+      </div>
+      <div class="cap-notice" id="capNotice"></div>
+    </div>
+
+    <div class="card">
+      <h2>Charge Breakdown</h2>
+      <div id="breakdownAccordion"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const RATE = 0.60;
+const NIGHT_CAP = 5.00;
+const DAY_CAP = 12.00;
+
+// Singapore Public Holidays 2024–2027 (YYYY-MM-DD)
+const SG_PUBLIC_HOLIDAYS = new Set([
+  // 2024
+  '2024-01-01','2024-02-10','2024-02-11','2024-04-10','2024-04-19',
+  '2024-05-01','2024-05-22','2024-06-17','2024-08-09','2024-10-31','2024-12-25',
+  // 2025
+  '2025-01-01','2025-01-29','2025-01-30','2025-03-31','2025-04-18',
+  '2025-05-01','2025-05-12','2025-06-07','2025-08-09','2025-10-20','2025-12-25',
+  // 2026 (source: MOM official)
+  '2026-01-01','2026-02-17','2026-02-18','2026-03-21','2026-04-03',
+  '2026-05-01','2026-05-27','2026-05-31','2026-08-09','2026-11-08','2026-12-25',
+  // 2027
+  '2027-01-01','2027-02-06','2027-02-07','2027-03-10','2027-03-26',
+  '2027-05-01','2027-05-01','2027-06-15','2027-08-09','2027-11-06','2027-12-25',
+]);
+
+// Compute PH-in-lieu dates: if a PH falls on Sunday, the following Monday is in lieu
+const PH_IN_LIEU = new Set();
+SG_PUBLIC_HOLIDAYS.forEach(dateStr => {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (d.getDay() === 0) { // Sunday
+    const mon = new Date(d);
+    mon.setDate(mon.getDate() + 1);
+    PH_IN_LIEU.add(mon.toLocaleDateString('en-CA'));
+  }
+});
+
+function isFreeDay(d) {
+  if (d.getDay() === 0) return true; // Sunday always free
+  const key = d.toLocaleDateString('en-CA');
+  return SG_PUBLIC_HOLIDAYS.has(key) || PH_IN_LIEU.has(key);
+}
+
+function fmt(d) {
+  return d.toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+function fmtDate(d) {
+  return d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short' }) + ' ' + fmt(d);
+}
+function minsOfDay(d) { return d.getHours() * 60 + d.getMinutes(); }
+function isNight(d) {
+  const m = minsOfDay(d);
+  return m >= 22 * 60 + 30 || m < 7 * 60;
+}
+
+/**
+ * Split [start, end] into alternating day/night windows.
+ * Day window:   07:00 – 22:30
+ * Night window: 22:30 – 07:00 (next day)
+ * Each window has: { type:'day'|'night', start, end }
+ */
+function splitPeriods(start, end) {
+  const periods = [];
+  let cur = new Date(start);
+
+  while (cur < end) {
+    const m = minsOfDay(cur);
+    let periodEnd;
+
+    if (m >= 22 * 60 + 30) {
+      // In night — runs to 7:00am next day
+      periodEnd = new Date(cur);
+      periodEnd.setDate(periodEnd.getDate() + 1);
+      periodEnd.setHours(7, 0, 0, 0);
+    } else if (m < 7 * 60) {
+      // In night (early morning) — runs to 7:00am same day
+      periodEnd = new Date(cur);
+      periodEnd.setHours(7, 0, 0, 0);
+    } else {
+      // In day — runs to 10:30pm same day
+      periodEnd = new Date(cur);
+      periodEnd.setHours(22, 30, 0, 0);
+    }
+
+    const pEnd = new Date(Math.min(periodEnd.getTime(), end.getTime()));
+    periods.push({ type: isNight(cur) ? 'night' : 'day', start: new Date(cur), end: pEnd });
+    cur = pEnd;
+  }
+  return periods;
+}
+
+/**
+ * For a single period, build 30-min blocks and apply cap / FPS free parking.
+ * Returns { blocks, raw, charged, capApplied, free }
+ */
+function calcPeriod(period, nps, fps) {
+  const blocks = [];
+  let cur = new Date(period.start);
+  while (cur < period.end) {
+    const bEnd = new Date(Math.min(cur.getTime() + 30 * 60 * 1000, period.end.getTime()));
+    blocks.push({ start: new Date(cur), end: new Date(bEnd), night: period.type === 'night', charge: RATE, capped: false, free: false });
+    cur = bEnd;
+  }
+
+  // FPS: day period on Sunday/PH/in-lieu → entire day period is free
+  if (fps && period.type === 'day' && isFreeDay(period.start)) {
+    const key = period.start.toLocaleDateString('en-CA');
+    const isSunday = period.start.getDay() === 0;
+    const isInLieu = PH_IN_LIEU.has(key);
+    const freeReason = isSunday ? 'Sunday' : isInLieu ? 'PH In-Lieu' : 'Public Holiday';
+    blocks.forEach(b => { b.charge = 0; b.free = true; b.freeReason = freeReason; });
+    return { blocks, raw: blocks.length * RATE, charged: 0, capApplied: false, cap: 0, free: true, freeReason };
+  }
+
+  const raw = blocks.length * RATE;
+  const cap = period.type === 'night' ? (nps ? NIGHT_CAP : Infinity) : DAY_CAP;
+  let capApplied = false;
+
+  if (raw > cap) {
+    capApplied = true;
+    let remaining = cap;
+    blocks.forEach(b => {
+      if (remaining >= RATE) {
+        b.charge = RATE;
+        remaining = +(remaining - RATE).toFixed(2);
+      } else {
+        b.charge = 0;
+        b.capped = true;
+      }
+    });
+  }
+
+  return { blocks, raw, charged: Math.min(raw, cap), capApplied, cap, free: false };
+}
+
+function calculate() {
+  const startVal = document.getElementById('startTime').value;
+  const endVal = document.getElementById('endTime').value;
+  const nps = document.getElementById('npsToggle').checked;
+  const fps = document.getElementById('fpsToggle').checked;
+  const errorEl = document.getElementById('errorMsg');
+
+  errorEl.classList.remove('show');
+  if (!startVal || !endVal) {
+    errorEl.textContent = 'Please enter both start and end date/time.';
+    errorEl.classList.add('show'); return;
+  }
+  const start = new Date(startVal);
+  const end = new Date(endVal);
+  if (end <= start) {
+    errorEl.textContent = 'End time must be after start time.';
+    errorEl.classList.add('show'); return;
+  }
+
+  // Split into day/night periods, calc each independently
+  const periods = splitPeriods(start, end);
+  const results = periods.map(p => calcPeriod(p, nps, fps));
+
+  const allBlocks = results.flatMap(r => r.blocks);
+  const totalRaw = results.reduce((s, r) => s + r.raw, 0);
+  const totalCharged = results.reduce((s, r) => s + r.charged, 0);
+
+  // Cap messages — one per capped period
+  const capMessages = results
+    .filter(r => r.capApplied)
+    .map(r => {
+      const type = r.blocks[0].night ? 'Night' : 'Day';
+      const label = `${fmtDate(r.blocks[0].start)} – ${fmtDate(r.blocks[r.blocks.length-1].end)}`;
+      return `${type} cap ($${r.cap.toFixed(2)}) applied for ${label} — raw $${r.raw.toFixed(2)}`;
+    });
+
+  // Duration
+  const totalMins = Math.ceil((end - start) / 60000);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  const durationStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+  // Render
+  document.getElementById('totalAmount').textContent = `$${totalCharged.toFixed(2)}`;
+  document.getElementById('statDuration').textContent = durationStr;
+  document.getElementById('statBlocks').textContent = allBlocks.length;
+  document.getElementById('statRaw').textContent = `$${totalRaw.toFixed(2)}`;
+
+  const capNotice = document.getElementById('capNotice');
+  if (capMessages.length) {
+    capNotice.innerHTML = capMessages.map(m => `⚠️ ${m}`).join('<br>');
+    capNotice.classList.add('show');
+  } else {
+    capNotice.classList.remove('show');
+  }
+
+  // Accordion — group results by calendar day
+  // A "day" here = the date of the first block's start
+  const accordion = document.getElementById('breakdownAccordion');
+  accordion.innerHTML = '';
+
+  // Group results by calendar date key (YYYY-MM-DD of period start)
+  const dayMap = new Map();
+  results.forEach(r => {
+    const key = r.blocks[0].start.toLocaleDateString('en-CA'); // YYYY-MM-DD
+    if (!dayMap.has(key)) dayMap.set(key, { date: r.blocks[0].start, periods: [], total: 0 });
+    const entry = dayMap.get(key);
+    entry.periods.push(r);
+    entry.total += r.charged;
+  });
+
+  dayMap.forEach((entry, key) => {
+    const dayLabel = entry.date.toLocaleDateString('en-SG', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    const periodCount = entry.periods.length;
+    const blockCount = entry.periods.reduce((s, r) => s + r.blocks.length, 0);
+
+    const group = document.createElement('div');
+    group.className = 'day-group';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    header.innerHTML = `
+      <div>
+        <div class="day-title">📅 ${dayLabel}</div>
+        <div class="day-meta">${periodCount} period${periodCount>1?'s':''} · ${blockCount} half-hour blocks</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="day-total">$${entry.total.toFixed(2)}</div>
+        <div class="chevron">▼</div>
+      </div>
+    `;
+    header.addEventListener('click', () => group.classList.toggle('open'));
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'day-body';
+
+    entry.periods.forEach(r => {
+      const isNightPeriod = r.blocks[0].night;
+      const periodLabel = isNightPeriod ? '🌙 Night  (10:30 PM – 7:00 AM)' : '☀️ Day  (7:00 AM – 10:30 PM)';
+      const chargeLabel = r.free
+        ? `<span style="color:#276749;font-weight:800">FREE</span> <span style="color:#718096;font-size:0.75rem">(${r.freeReason})</span> <span style="color:#a0aec0;text-decoration:line-through;font-size:0.75rem">$${r.raw.toFixed(2)}</span>`
+        : r.capApplied
+          ? `$${r.charged.toFixed(2)} <span style="color:#a0522d">(capped · raw $${r.raw.toFixed(2)})</span>`
+          : `$${r.charged.toFixed(2)}`;
+
+      const ph = document.createElement('div');
+      ph.className = 'period-header';
+      ph.innerHTML = `<span>${periodLabel}</span><span class="period-charge">${chargeLabel}</span>`;
+      body.appendChild(ph);
+
+      const tbl = document.createElement('table');
+      const tb = document.createElement('tbody');
+      r.blocks.forEach(b => {
+        const tr = document.createElement('tr');
+        if (b.night) tr.classList.add('night-row');
+        if (b.capped) tr.classList.add('capped-row');
+        if (b.free) tr.style.cssText = 'background:#f0fff4;color:#276749';
+        const badge = b.free
+          ? `<span class="badge" style="background:#c6f6d5;color:#276749">${b.freeReason || 'Free'}</span>`
+          : b.capped ? '<span class="badge capped">Capped</span>' : '';
+        tr.innerHTML = `
+          <td>${fmt(b.start)}</td>
+          <td>${fmt(b.end)}</td>
+          <td>${badge}</td>
+          <td>${b.free ? 'FREE' : b.capped ? '–' : '$' + b.charge.toFixed(2)}</td>
+        `;
+        tb.appendChild(tr);
+      });
+      tbl.appendChild(tb);
+      body.appendChild(tbl);
+    });
+
+    group.appendChild(header);
+    group.appendChild(body);
+    accordion.appendChild(group);
+
+    // Auto-open first day
+    if (accordion.children.length === 1) group.classList.add('open');
+  });
+
+  document.getElementById('resultSection').style.display = 'block';
+  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Default: now + 2 hours
+(function() {
+  const now = new Date();
+  const later = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const toLocal = d => new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  document.getElementById('startTime').value = toLocal(now);
+  document.getElementById('endTime').value = toLocal(later);
+})();
+</script>
+</body>
+</html>
