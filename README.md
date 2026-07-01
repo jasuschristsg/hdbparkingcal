@@ -1,8 +1,25 @@
 # HDB Parking Calculator
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-live-success.svg)](https://jasuschristsg.github.io/hdbparkingcal/hdb-parking-calculator.html)
+[![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](hdb-parking-calculator.html)
+[![Single File](https://img.shields.io/badge/build-single--file%20HTML-orange.svg)](hdb-parking-calculator.html)
+
 A browser-based calculator for estimating HDB short-term parking charges (Outside Central Area). Enter your start and end time to get a full cost breakdown, with support for multi-day stays, capped periods, and free parking days.
 
-**[Open the calculator](https://jasuschristsg.github.io/hdbparkingcal/hdb-parking-calculator.html)** — no install, no sign-up, works offline once loaded.
+**[Open the calculator →](https://jasuschristsg.github.io/hdbparkingcal/hdb-parking-calculator.html)** — no install, no sign-up, works offline once loaded.
+
+## Contents
+- [Features](#features)
+- [Usage](#usage)
+- [How Charges Are Calculated](#how-charges-are-calculated)
+- [Example](#example)
+- [Public Holiday Data](#public-holiday-data)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [References](#references)
+- [Disclaimer](#disclaimer)
+- [License](#license)
 
 ## Features
 - Calculates charges in 30-minute blocks at $0.60/block
@@ -16,7 +33,7 @@ A browser-based calculator for estimating HDB short-term parking charges (Outsid
 ## Usage
 1. Open the [live calculator](https://jasuschristsg.github.io/hdbparkingcal/hdb-parking-calculator.html) (or open `hdb-parking-calculator.html` directly in any browser).
 2. Enter a **Start Date & Time** and **End Date & Time**.
-3. Leave **NPS** and **FPS** toggled on unless your car park doesn't offer them (see [Toggles](#toggles) below).
+3. Leave **NPS** and **FPS** toggled on unless your car park doesn't offer them (see [Toggles](#how-charges-are-calculated) below).
 4. Click **Calculate Charges** to see the total cost, duration, and a day-by-day breakdown.
 5. Click any day in the breakdown to expand it and see the charge for each 30-minute block.
 
@@ -50,15 +67,27 @@ Parking from **Saturday 8:00pm** to **Sunday 9:00am**:
 ## Public Holiday Data
 Public Holiday dates are hardcoded for 2024–2027 in the `SG_PUBLIC_HOLIDAYS` set inside the script. PH-in-lieu Mondays are computed automatically — you don't need to add them manually. See [HANDOVER.md](HANDOVER.md) for instructions on updating these dates for future years.
 
+## Project Structure
+```
+hdbparkingcal/
+├── hdb-parking-calculator.html   # The entire app — markup, styles, and logic in one file
+├── README.md                     # This file
+├── HANDOVER.md                   # Maintainer notes: function map, updating PH dates
+└── LICENSE                       # MIT
+```
+
 ## Development
-This is a single self-contained HTML file (`hdb-parking-calculator.html`) with inline CSS and vanilla JavaScript — no build step, no package manager, no dependencies.
+`hdb-parking-calculator.html` is a single self-contained file with inline CSS and vanilla JavaScript — no build step, no package manager, no dependencies to install.
 
 To make changes:
 1. Edit `hdb-parking-calculator.html` directly.
 2. Open the file in a browser to test.
-3. Commit and push — [GitHub Pages](https://jasuschristsg.github.io/hdbparkingcal/hdb-parking-calculator.html) serves the file directly from the repo.
+3. Commit and push — [GitHub Pages](https://jasuschristsg.github.io/hdbparkingcal/hdb-parking-calculator.html) serves the file directly from the repo, so changes go live as soon as they land on `main`.
 
 For a map of the key functions and maintenance notes (e.g. updating Public Holiday dates), see [HANDOVER.md](HANDOVER.md).
+
+### Contributing
+Issues and pull requests are welcome — e.g. corrections to Public Holiday dates, rate/cap changes if HDB updates them, or bug reports on the charge calculation.
 
 ## References
 - [HDB Short-Term Parking Charges](https://www.hdb.gov.sg/parking/other-parking-matters/shortterm-parking/shortterm-parking-charges)
